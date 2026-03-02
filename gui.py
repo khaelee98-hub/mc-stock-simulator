@@ -28,32 +28,32 @@ from ticker_db import TICKER_DB, search_tickers
 # ═══════════════════════════════════════════
 
 THEME = {
-    "bg":              "#FAF7F2",
-    "surface":         "#F5F0E8",
+    "bg":              "#F7F8FA",
+    "surface":         "#FFFFFF",
     "card":            "#FFFFFF",
-    "border":          "#C8BBA8",
-    "accent":          "#6B5230",
-    "accent_hover":    "#5A4225",
-    "text_primary":    "#0D0905",
-    "text_secondary":  "#332810",
-    "text_disabled":   "#6B5F4E",
-    "input_bg":        "#FFFFFF",
-    "input_border":    "#B0A490",
-    "input_focus":     "#6B5230",
-    "chart_bg":        "#FAF7F2",
-    "chart_grid":      "#C8BBA8",
-    "chart_text":      "#0D0905",
-    "chart_spine":     "#B0A490",
-    "table_header_bg": "#EDE5D8",
-    "table_row_alt":   "#F8F4EE",
-    "success":         "#5A7A5A",
-    "error":           "#8B3A3A",
-    "warning":         "#8B6F47",
+    "border":          "#E5E7EB",
+    "accent":          "#2563EB",
+    "accent_hover":    "#1D4ED8",
+    "text_primary":    "#111827",
+    "text_secondary":  "#6B7280",
+    "text_disabled":   "#9CA3AF",
+    "input_bg":        "#F9FAFB",
+    "input_border":    "#D1D5DB",
+    "input_focus":     "#2563EB",
+    "chart_bg":        "#FFFFFF",
+    "chart_grid":      "#F3F4F6",
+    "chart_text":      "#374151",
+    "chart_spine":     "#E5E7EB",
+    "table_header_bg": "#F3F4F6",
+    "table_row_alt":   "#F9FAFB",
+    "success":         "#059669",
+    "error":           "#DC2626",
+    "warning":         "#D97706",
 }
 
 ACCENT_COLORS = [
-    "#5A7A8B", "#7A8B5A", "#8B5A6F", "#5A6F8B", "#8B7A5A",
-    "#6F5A8B", "#5A8B7A", "#8B5A5A", "#6F8B5A", "#8B6F47",
+    "#2563EB", "#DC2626", "#059669", "#7C3AED", "#D97706",
+    "#DB2777", "#0891B2", "#65A30D", "#9333EA", "#EA580C",
 ]
 
 # ── Layout Constants ──
@@ -63,8 +63,8 @@ WINDOW_MIN_W = 1100
 WINDOW_MIN_H = 700
 LEFT_PANEL_WIDTH = 440
 CARD_CORNER_RADIUS = 12
-CARD_PADDING = 14
-CARD_GAP = 10
+CARD_PADDING = 16
+CARD_GAP = 12
 
 MAX_TICKERS = 10
 
@@ -119,6 +119,7 @@ class InvestmentSimulatorGUI:
 
         self._setup_chart_style()
         self._build_ui()
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ───────────────────────────────
     #  Chart Style
@@ -162,10 +163,10 @@ class InvestmentSimulatorGUI:
         self.main_frame = ctk.CTkFrame(self.root, fg_color=THEME["bg"])
         self.main_frame.pack(fill="both", expand=True)
 
-        # Left panel wrapper (fixed width)
+        # Left panel wrapper (fixed width, subtle right border)
         left_wrapper = ctk.CTkFrame(
             self.main_frame, width=LEFT_PANEL_WIDTH, fg_color=THEME["surface"],
-            corner_radius=0,
+            corner_radius=0, border_width=1, border_color=THEME["border"],
         )
         left_wrapper.pack(side="left", fill="y", padx=0, pady=0)
         left_wrapper.pack_propagate(False)
@@ -204,11 +205,15 @@ class InvestmentSimulatorGUI:
     # ───────────────────────────────
 
     def _build_input_panel(self):
-        # Title
+        # Title + subtitle
         ctk.CTkLabel(
             self.left_panel, text="몬테카를로 투자 시뮬레이터",
             font=FONT_TITLE, text_color=THEME["text_primary"],
-        ).pack(padx=CARD_PADDING, pady=(CARD_PADDING, 4))
+        ).pack(padx=CARD_PADDING, pady=(CARD_PADDING, 0))
+        ctk.CTkLabel(
+            self.left_panel, text="Monte Carlo Investment Simulator",
+            font=FONT_SMALL, text_color=THEME["text_disabled"],
+        ).pack(padx=CARD_PADDING, pady=(0, 8))
 
         self._build_ticker_card()
         self._build_amount_card()
@@ -243,14 +248,14 @@ class InvestmentSimulatorGUI:
         btn_frame = ctk.CTkFrame(card, fg_color="transparent")
         btn_frame.pack(fill="x", padx=CARD_PADDING, pady=(4, CARD_PADDING))
         ctk.CTkButton(
-            btn_frame, text="+ 종목 추가", width=100, height=28,
+            btn_frame, text="+ 종목 추가", width=100, height=32,
             font=FONT_SMALL, fg_color=THEME["accent"], hover_color=THEME["accent_hover"],
             text_color="#FFFFFF",
             command=self._on_add_ticker,
         ).pack(side="left")
         ctk.CTkButton(
-            btn_frame, text="- 삭제", width=70, height=28,
-            font=FONT_SMALL, fg_color=THEME["error"], hover_color="#6B2A2A",
+            btn_frame, text="- 삭제", width=70, height=32,
+            font=FONT_SMALL, fg_color=THEME["error"], hover_color="#B91C1C",
             text_color="#FFFFFF",
             command=self._on_remove_ticker,
         ).pack(side="left", padx=(8, 0))
@@ -273,7 +278,7 @@ class InvestmentSimulatorGUI:
 
         eng_name_var = ctk.StringVar()
         eng_entry = ctk.CTkEntry(
-            top, textvariable=eng_name_var, width=250, height=30,
+            top, textvariable=eng_name_var, width=250, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"],
             border_color=THEME["input_border"],
             placeholder_text="영문 회사명 입력...",
@@ -282,7 +287,7 @@ class InvestmentSimulatorGUI:
 
         weight_var = ctk.StringVar(value="0.0")
         weight_entry = ctk.CTkEntry(
-            top, textvariable=weight_var, width=60, height=30,
+            top, textvariable=weight_var, width=60, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"],
             border_color=THEME["input_border"],
         )
@@ -371,22 +376,29 @@ class InvestmentSimulatorGUI:
         self._autocomplete_window.wm_overrideredirect(True)
         self._autocomplete_window.configure(fg_color=THEME["card"])
 
+        # Wrapper with border for visual polish
+        wrapper = ctk.CTkFrame(
+            self._autocomplete_window, fg_color=THEME["card"],
+            corner_radius=8, border_width=1, border_color=THEME["border"],
+        )
+        wrapper.pack(fill="both", expand=True)
+
         # Position below entry
         x = entry.winfo_rootx()
-        y = entry.winfo_rooty() + entry.winfo_height()
-        self._autocomplete_window.geometry(f"350x{min(len(results), 8) * 28 + 4}+{x}+{y}")
+        y = entry.winfo_rooty() + entry.winfo_height() + 2
+        self._autocomplete_window.geometry(f"350x{min(len(results), 8) * 32 + 8}+{x}+{y}")
 
         for ticker_code, en_name, ko_name in results:
             item = ctk.CTkButton(
-                self._autocomplete_window,
+                wrapper,
                 text=f"{en_name:<30s} {ticker_code}",
-                font=FONT_MONO, anchor="w", height=26,
+                font=FONT_MONO, anchor="w", height=30,
                 fg_color="transparent", text_color=THEME["text_primary"],
-                hover_color=THEME["surface"],
+                hover_color=THEME["surface"], corner_radius=6,
                 command=lambda e=en_name, t=ticker_code, k=ko_name: self._select_autocomplete(
                     e, t, k, eng_var, ticker_label, ko_label),
             )
-            item.pack(fill="x", padx=2, pady=1)
+            item.pack(fill="x", padx=4, pady=1)
 
     def _select_autocomplete(self, en_name, ticker_code, ko_name, eng_var, ticker_label, ko_label):
         eng_var.set(en_name)
@@ -413,7 +425,7 @@ class InvestmentSimulatorGUI:
         row1.pack(fill="x", pady=(2, 8))
         self.initial_var = ctk.StringVar(value="10,000,000")
         ctk.CTkEntry(
-            row1, textvariable=self.initial_var, width=200, height=30,
+            row1, textvariable=self.initial_var, width=200, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"], border_color=THEME["input_border"],
         ).pack(side="left")
         ctk.CTkLabel(row1, text="원", font=FONT_BODY,
@@ -426,7 +438,7 @@ class InvestmentSimulatorGUI:
         row2.pack(fill="x", pady=(2, 8))
         self.monthly_var = ctk.StringVar(value="500,000")
         ctk.CTkEntry(
-            row2, textvariable=self.monthly_var, width=200, height=30,
+            row2, textvariable=self.monthly_var, width=200, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"], border_color=THEME["input_border"],
         ).pack(side="left")
         ctk.CTkLabel(row2, text="원", font=FONT_BODY,
@@ -470,7 +482,7 @@ class InvestmentSimulatorGUI:
                      text_color=THEME["text_secondary"]).pack(anchor="w")
         self.years_var = ctk.StringVar(value="20")
         ctk.CTkEntry(
-            self.years_frame, textvariable=self.years_var, width=100, height=30,
+            self.years_frame, textvariable=self.years_var, width=100, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"], border_color=THEME["input_border"],
         ).pack(anchor="w", pady=(2, 0))
 
@@ -480,14 +492,14 @@ class InvestmentSimulatorGUI:
                      text_color=THEME["text_secondary"]).pack(anchor="w")
         self.start_var = ctk.StringVar(value="2025-01")
         ctk.CTkEntry(
-            self.date_frame, textvariable=self.start_var, width=150, height=30,
+            self.date_frame, textvariable=self.start_var, width=150, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"], border_color=THEME["input_border"],
         ).pack(anchor="w", pady=(2, 8))
         ctk.CTkLabel(self.date_frame, text="종료 (YYYY-MM)", font=FONT_SMALL,
                      text_color=THEME["text_secondary"]).pack(anchor="w")
         self.end_var = ctk.StringVar(value="2045-01")
         ctk.CTkEntry(
-            self.date_frame, textvariable=self.end_var, width=150, height=30,
+            self.date_frame, textvariable=self.end_var, width=150, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"], border_color=THEME["input_border"],
         ).pack(anchor="w", pady=(2, 0))
 
@@ -512,7 +524,7 @@ class InvestmentSimulatorGUI:
                      text_color=THEME["text_secondary"]).pack(anchor="w")
         self.sims_var = ctk.StringVar(value="10,000")
         ctk.CTkEntry(
-            inner, textvariable=self.sims_var, width=150, height=30,
+            inner, textvariable=self.sims_var, width=150, height=34,
             font=FONT_INPUT, fg_color=THEME["input_bg"], border_color=THEME["input_border"],
         ).pack(anchor="w", pady=(2, 0))
 
@@ -524,7 +536,7 @@ class InvestmentSimulatorGUI:
         inner.pack(fill="x", padx=CARD_PADDING, pady=CARD_PADDING)
 
         ctk.CTkButton(
-            inner, text="시뮬레이션 실행", font=FONT_BODY, height=40,
+            inner, text="시뮬레이션 실행", font=FONT_BODY, height=44,
             fg_color=THEME["accent"], hover_color=THEME["accent_hover"],
             text_color="#FFFFFF",
             command=self._run_simulation,
@@ -534,14 +546,14 @@ class InvestmentSimulatorGUI:
         btn_row.pack(fill="x")
 
         ctk.CTkButton(
-            btn_row, text="초기화", font=FONT_SMALL, width=80, height=30,
+            btn_row, text="초기화", font=FONT_SMALL, width=80, height=32,
             fg_color="transparent", text_color=THEME["text_secondary"],
             border_width=1, border_color=THEME["border"],
             hover_color=THEME["surface"], command=self._reset,
         ).pack(side="left")
 
         ctk.CTkButton(
-            btn_row, text="설정", font=FONT_SMALL, width=80, height=30,
+            btn_row, text="설정", font=FONT_SMALL, width=80, height=32,
             fg_color="transparent", text_color=THEME["text_secondary"],
             border_width=1, border_color=THEME["border"],
             hover_color=THEME["surface"], command=self._open_settings,
@@ -558,13 +570,25 @@ class InvestmentSimulatorGUI:
     # ───────────────────────────────
 
     def _build_results_placeholder(self):
-        self.results_placeholder = ctk.CTkLabel(
-            self.right_panel, text="시뮬레이션을 실행하면 결과가 여기에 표시됩니다.",
+        holder = ctk.CTkFrame(self.right_panel, fg_color="transparent")
+        holder.pack(expand=True)
+        ctk.CTkLabel(
+            holder, text="📊", font=("", 48),
+        ).pack(pady=(0, 8))
+        ctk.CTkLabel(
+            holder, text="시뮬레이션을 실행하면\n결과가 여기에 표시됩니다.",
             font=FONT_BODY, text_color=THEME["text_disabled"],
-        )
-        self.results_placeholder.pack(expand=True)
+            justify="center",
+        ).pack()
+        ctk.CTkLabel(
+            holder, text="왼쪽 패널에서 종목과 설정을 입력한 후\n'시뮬레이션 실행' 버튼을 눌러주세요.",
+            font=FONT_SMALL, text_color=THEME["text_disabled"],
+            justify="center",
+        ).pack(pady=(4, 0))
+        self.results_placeholder = holder
 
     def _clear_results(self):
+        plt.close("all")
         for w in self.right_panel.winfo_children():
             w.destroy()
 
@@ -831,9 +855,12 @@ class InvestmentSimulatorGUI:
         self._embed_figure(scroll, fig)
 
     def _show_comparison_help_popup(self):
-        if hasattr(self, "_help_window") and self._help_window.winfo_exists():
-            self._help_window.focus()
-            return
+        try:
+            if hasattr(self, "_help_window") and self._help_window.winfo_exists():
+                self._help_window.focus()
+                return
+        except Exception:
+            pass
 
         self._help_window = ctk.CTkToplevel(self.root)
         self._help_window.title("지표 설명")
@@ -1021,11 +1048,6 @@ class InvestmentSimulatorGUI:
 
             dt = close.index[i].strftime("%Y-%m-%d")
             price = f"₩{close.iloc[i]:,.0f}"
-
-            if i < len(daily_ret) and i > 0:
-                ret_val = daily_ret.iloc[i - 1] * 100 if i - 1 < len(daily_ret) else None
-            else:
-                ret_val = None
 
             # Align indices for daily_ret (which starts from index 1 of close)
             ret_idx = close.index[i]
@@ -1281,7 +1303,7 @@ class InvestmentSimulatorGUI:
 
         left_wrapper = ctk.CTkFrame(
             self.main_frame, width=LEFT_PANEL_WIDTH, fg_color=THEME["surface"],
-            corner_radius=0,
+            corner_radius=0, border_width=1, border_color=THEME["border"],
         )
         left_wrapper.pack(side="left", fill="y", padx=0, pady=0)
         left_wrapper.pack_propagate(False)
@@ -1304,8 +1326,13 @@ class InvestmentSimulatorGUI:
             self._build_results_placeholder()
 
     # ───────────────────────────────
-    #  Run
+    #  Run / Close
     # ───────────────────────────────
+
+    def _on_close(self):
+        self._close_autocomplete()
+        plt.close("all")
+        self.root.destroy()
 
     def run(self):
         self.root.mainloop()
