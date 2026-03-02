@@ -359,14 +359,14 @@ def plot_fan_chart(paths, total_months, start=None, end=None, fig=None):
     p75 = np.percentile(paths, 75, axis=0)
     p90 = np.percentile(paths, 90, axis=0)
 
-    ax.fill_between(months, p10, p90, alpha=0.15, color="#5A7A8B", label="10-90th 백분위")
-    ax.fill_between(months, p25, p75, alpha=0.3, color="#5A7A8B", label="25-75th 백분위")
-    ax.plot(months, p50, color="#8B6F47", linewidth=2, label="중앙값 (50th)")
+    ax.fill_between(months, p10, p90, alpha=0.15, color="#2563EB", label="10-90th 백분위")
+    ax.fill_between(months, p25, p75, alpha=0.3, color="#2563EB", label="25-75th 백분위")
+    ax.plot(months, p50, color="#111827", linewidth=2, label="중앙값 (50th)")
 
     # Sample paths
     n_samples = min(20, paths.shape[0])
     for i in range(n_samples):
-        ax.plot(months, paths[i], alpha=0.1, color="#6B5B45", linewidth=0.5)
+        ax.plot(months, paths[i], alpha=0.1, color="#9CA3AF", linewidth=0.5)
 
     ax.set_xlabel("개월")
     ax.set_ylabel("포트폴리오 가치")
@@ -386,16 +386,16 @@ def plot_histogram(paths, fig=None):
         fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111)
 
-    ax.hist(finals, bins=80, alpha=0.7, color="#5A7A8B", edgecolor="white", linewidth=0.3)
+    ax.hist(finals, bins=80, alpha=0.7, color="#2563EB", edgecolor="white", linewidth=0.3)
 
     p10 = np.percentile(finals, 10)
     p50 = np.median(finals)
     p90 = np.percentile(finals, 90)
 
     for val, label, color in [
-        (p10, f"10th: {_format_krw(p10)}", "#8B3A3A"),
-        (p50, f"중앙값: {_format_krw(p50)}", "#8B6F47"),
-        (p90, f"90th: {_format_krw(p90)}", "#5A7A5A"),
+        (p10, f"10th: {_format_krw(p10)}", "#DC2626"),
+        (p50, f"중앙값: {_format_krw(p50)}", "#111827"),
+        (p90, f"90th: {_format_krw(p90)}", "#059669"),
     ]:
         ax.axvline(val, color=color, linestyle="--", linewidth=1.5, label=label)
 
@@ -416,13 +416,13 @@ def plot_trend_chart(ticker, close, daily_returns, mean, vol, fig=None):
 
     # Panel 1: Price with 50/200 MA
     ax1 = fig.add_subplot(3, 1, 1)
-    ax1.plot(close.index, close.values, linewidth=1, color="#5A7A8B", label="종가")
+    ax1.plot(close.index, close.values, linewidth=1, color="#2563EB", label="종가")
     if len(close) >= 50:
         ma50 = close.rolling(50).mean()
-        ax1.plot(close.index, ma50.values, linewidth=1, color="#8B6F47", alpha=0.8, label="50일 MA")
+        ax1.plot(close.index, ma50.values, linewidth=1, color="#D97706", alpha=0.8, label="50일 MA")
     if len(close) >= 200:
         ma200 = close.rolling(200).mean()
-        ax1.plot(close.index, ma200.values, linewidth=1, color="#7A8B5A", alpha=0.8, label="200일 MA")
+        ax1.plot(close.index, ma200.values, linewidth=1, color="#059669", alpha=0.8, label="200일 MA")
     ax1.set_title(f"{ticker} 주가")
     ax1.yaxis.set_major_formatter(mticker.FuncFormatter(_format_krw))
     ax1.legend(fontsize=14)
@@ -430,7 +430,7 @@ def plot_trend_chart(ticker, close, daily_returns, mean, vol, fig=None):
 
     # Panel 2: Daily returns
     ax2 = fig.add_subplot(3, 1, 2)
-    colors = ["#5A7A5A" if r >= 0 else "#8B3A3A" for r in daily_returns.values]
+    colors = ["#059669" if r >= 0 else "#DC2626" for r in daily_returns.values]
     ax2.bar(daily_returns.index, daily_returns.values * 100, width=1, color=colors, alpha=0.6)
     ax2.set_title("일간 수익률 (%)")
     ax2.set_ylabel("%")
@@ -439,7 +439,7 @@ def plot_trend_chart(ticker, close, daily_returns, mean, vol, fig=None):
     # Panel 3: Rolling 60-day volatility
     ax3 = fig.add_subplot(3, 1, 3)
     rolling_vol = daily_returns.rolling(60).std() * np.sqrt(252) * 100
-    ax3.plot(rolling_vol.index, rolling_vol.values, linewidth=1, color="#8B5A6F")
+    ax3.plot(rolling_vol.index, rolling_vol.values, linewidth=1, color="#7C3AED")
     ax3.set_title("60일 롤링 변동성 (연환산 %)")
     ax3.set_ylabel("%")
     ax3.grid(True, alpha=0.3)
@@ -468,11 +468,7 @@ def plot_summary_dashboard(paths, tickers, weights, stats, initial, contribution
         else:
             labels.append(t)
 
-    colors = [
-        "#5A7A8B", "#7A8B5A", "#8B5A6F", "#5A6F8B", "#8B7A5A",
-        "#6F5A8B", "#5A8B7A", "#8B5A5A", "#6F8B5A", "#8B6F47",
-    ]
-    pie_colors = colors[: len(tickers)]
+    pie_colors = ACCENT_COLORS[: len(tickers)]
 
     # ── Top-left: Initial allocation donut ──
     ax1 = fig.add_subplot(2, 2, 1)
@@ -591,14 +587,14 @@ def plot_percentile_bar(paths, initial, contribution, total_months, contribution
     bar_colors = []
     for v in values:
         if v >= total_principal:
-            bar_colors.append("#5A7A5A")
+            bar_colors.append("#059669")
         else:
-            bar_colors.append("#8B3A3A")
+            bar_colors.append("#DC2626")
 
     bars = ax.barh(labels, values, color=bar_colors, alpha=0.8, height=0.6)
 
     # Principal line
-    ax.axvline(total_principal, color="#8B6F47", linestyle="--", linewidth=1.5,
+    ax.axvline(total_principal, color="#6B7280", linestyle="--", linewidth=1.5,
                label=f"투자 원금: {_format_krw(total_principal)}")
 
     for bar, val in zip(bars, values):
@@ -619,8 +615,8 @@ def plot_percentile_bar(paths, initial, contribution, total_months, contribution
 # ═══════════════════════════════════════════
 
 ACCENT_COLORS = [
-    "#5A7A8B", "#7A8B5A", "#8B5A6F", "#5A6F8B", "#8B7A5A",
-    "#6F5A8B", "#5A8B7A", "#8B5A5A", "#6F8B5A", "#8B6F47",
+    "#2563EB", "#DC2626", "#059669", "#7C3AED", "#D97706",
+    "#DB2777", "#0891B2", "#65A30D", "#9333EA", "#EA580C",
 ]
 
 
@@ -639,7 +635,7 @@ def _plot_hist_panel(axes, ticker_metrics, tickers, colors, key, title, ref_line
                 f" {median_val:.2f}", fontsize=14, color=colors[j % len(colors)])
 
         if ref_line is not None:
-            ax.axvline(ref_line, color="#B8A898", linestyle=":", linewidth=1)
+            ax.axvline(ref_line, color="#D1D5DB", linestyle=":", linewidth=1)
 
         ax.set_xlim(xlim)
         en_name = TICKER_DB[t]["en"] if t in TICKER_DB else t
@@ -690,8 +686,8 @@ def _plot_scatter_risk_return(ax, ticker_metrics, tickers, weights, colors):
 
     all_sigma = [ticker_metrics[t]["sigma"] * 100 for t in tickers]
     all_mu = [ticker_metrics[t]["mu"] * 100 for t in tickers]
-    ax.axhline(np.mean(all_mu), color="#B8A898", linestyle=":", linewidth=1)
-    ax.axvline(np.mean(all_sigma), color="#B8A898", linestyle=":", linewidth=1)
+    ax.axhline(np.mean(all_mu), color="#D1D5DB", linestyle=":", linewidth=1)
+    ax.axvline(np.mean(all_sigma), color="#D1D5DB", linestyle=":", linewidth=1)
     ax.set_xlabel("변동성 σ (%)")
     ax.set_ylabel("수익률 μ (%)")
     ax.set_title("리스크-수익 산점도")
