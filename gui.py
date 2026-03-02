@@ -312,7 +312,7 @@ class InvestmentSimulatorGUI:
         # Autocomplete binding
         eng_entry.bind("<KeyRelease>", lambda e, ev=eng_name_var, tl=ticker_label,
                        kl=ko_name_label, entry=eng_entry: self._on_ticker_key(e, ev, tl, kl, entry))
-        eng_entry.bind("<FocusOut>", lambda e: self._close_autocomplete())
+        eng_entry.bind("<FocusOut>", lambda e: self.root.after(150, self._close_autocomplete))
 
         # Weight change tracking
         weight_var.trace_add("write", lambda *_: self._update_weight_sum())
