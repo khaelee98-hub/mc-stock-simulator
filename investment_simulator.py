@@ -30,10 +30,10 @@ FREQ_CONTRIB_LABELS = {"weekly": "주간 적립", "monthly": "월간 적립", "y
 #  Data Functions
 # ═══════════════════════════════════════════
 
-def fetch_historical_data(tickers, start_date=None, end_date=None):
+def fetch_historical_data(tickers, start_date=None, end_date=None, history_years=25):
     """Download price data via yfinance and compute per-ticker stats.
 
-    Default range: today - 25 years ~ today.
+    Default range: today - history_years ~ today.
 
     Returns:
         (stats_dict, price_data_dict)
@@ -44,7 +44,7 @@ def fetch_historical_data(tickers, start_date=None, end_date=None):
     if end_date is None:
         end_date = today.strftime("%Y-%m-%d")
     if start_date is None:
-        start_date = (today - relativedelta(years=25)).strftime("%Y-%m-%d")
+        start_date = (today - relativedelta(years=history_years)).strftime("%Y-%m-%d")
 
     stats = {}
     price_data = {}
@@ -786,10 +786,6 @@ def setup_matplotlib_korean_font():
 
 def parse_args():
     """Parse command-line arguments."""
-    today = date.today()
-    default_start = (today - relativedelta(years=25)).strftime("%Y-%m-%d")
-    default_end = today.strftime("%Y-%m-%d")
-
     parser = argparse.ArgumentParser(
         description="몬테카를로 투자 시뮬레이터 V2",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -805,9 +801,11 @@ def parse_args():
     parser.add_argument("--simulations", type=int, default=10000, help="시뮬레이션 횟수")
     parser.add_argument("--contribution-freq", choices=["weekly", "monthly", "yearly"],
                         default="monthly", help="적립 주기")
-    parser.add_argument("--start-date", type=str, default=default_start,
+    parser.add_argument("--history-years", type=int, default=25,
+                        choices=[15, 20, 25, 30], help="과거 데이터 수집 기간 (년)")
+    parser.add_argument("--start-date", type=str, default=None,
                         help="히스토리 데이터 시작일 (YYYY-MM-DD)")
-    parser.add_argument("--end-date", type=str, default=default_end,
+    parser.add_argument("--end-date", type=str, default=None,
                         help="히스토리 데이터 종료일 (YYYY-MM-DD)")
     return parser.parse_args()
 
@@ -854,8 +852,10 @@ def main():
     start, end, years = validate_period_args(args)
     total_months = compute_simulation_months(start, end, years)
 
-    print(f"데이터 수집 중... ({args.start_date} ~ {args.end_date})")
-    stats, price_data = fetch_historical_data(args.tickers, args.start_date, args.end_date)
+    print(f"데이터 수집 중... (과거 {args.history_years}년)")
+    stats, price_data = fetch_historical_data(
+        args.tickers, args.start_date, args.end_date,
+        history_years=args.history_years)
 
     for t in args.tickers:
         s = stats[t]

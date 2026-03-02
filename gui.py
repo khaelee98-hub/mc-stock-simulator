@@ -212,6 +212,7 @@ class InvestmentSimulatorGUI:
 
         self._build_ticker_card()
         self._build_amount_card()
+        self._build_history_card()
         self._build_period_card()
         self._build_simulation_card()
         self._build_button_card()
@@ -307,7 +308,7 @@ class InvestmentSimulatorGUI:
         # Autocomplete binding
         eng_entry.bind("<KeyRelease>", lambda e, ev=eng_name_var, tl=ticker_label,
                        kl=ko_name_label, entry=eng_entry: self._on_ticker_key(e, ev, tl, kl, entry))
-        eng_entry.bind("<FocusOut>", lambda e: self._close_autocomplete())
+        eng_entry.bind("<FocusOut>", lambda e: self.root.after(150, self._close_autocomplete))
 
         # Weight change tracking
         weight_var.trace_add("write", lambda *_: self._update_weight_sum())
@@ -445,7 +446,29 @@ class InvestmentSimulatorGUI:
             text_color=THEME["text_primary"],
         ).pack(fill="x")
 
-    # ── Card 3: Period ──
+    # ── Card 3: History Period ──
+
+    def _build_history_card(self):
+        card = self._make_card(self.left_panel, "과거 데이터 수집 기간")
+        inner = ctk.CTkFrame(card, fg_color="transparent")
+        inner.pack(fill="x", padx=CARD_PADDING, pady=(0, CARD_PADDING))
+
+        self.history_years_var = ctk.StringVar(value="25년")
+        ctk.CTkSegmentedButton(
+            inner, values=["15년", "20년", "25년", "30년"],
+            variable=self.history_years_var, font=FONT_SMALL,
+            fg_color=THEME["surface"], selected_color=THEME["accent"],
+            selected_hover_color=THEME["accent_hover"],
+            unselected_color=THEME["card"], unselected_hover_color=THEME["surface"],
+            text_color=THEME["text_primary"],
+        ).pack(fill="x", pady=(0, 4))
+
+        ctk.CTkLabel(
+            inner, text="μ/σ 추정에 사용할 과거 시세 범위",
+            font=FONT_SMALL, text_color=THEME["text_secondary"],
+        ).pack(anchor="w")
+
+    # ── Card 4: Period ──
 
     def _build_period_card(self):
         card = self._make_card(self.left_panel, "기간 설정")
@@ -607,11 +630,15 @@ class InvestmentSimulatorGUI:
             start = self.start_var.get()
             end = self.end_var.get()
 
+        # History period
+        history_years = int(self.history_years_var.get().replace("년", ""))
+
         return {
             "tickers": tickers, "weights": weights,
             "initial": initial, "monthly": monthly,
             "sims": sims, "freq": freq,
             "start": start, "end": end, "years": years,
+            "history_years": history_years,
         }
 
     def _run_simulation(self):
@@ -635,7 +662,8 @@ class InvestmentSimulatorGUI:
                     compute_ticker_risk_metrics,
                 )
 
-                stats, price_data = fetch_historical_data(params["tickers"])
+                stats, price_data = fetch_historical_data(
+                    params["tickers"], history_years=params["history_years"])
 
                 total_months = compute_simulation_months(
                     params["start"], params["end"], params["years"])
@@ -938,28 +966,6 @@ class InvestmentSimulatorGUI:
             font=FONT_BODY, text_color=THEME["text_primary"], justify="left",
         ).pack(anchor="w", padx=12, pady=10)
 
-        # ── Ticker selection ──
-        self._raw_data_scroll = scroll
-        self._raw_data_table_frame = ctk.CTkFrame(scroll, fg_color="transparent")
-        self._raw_data_table_frame.pack(fill="x", padx=8)
-
-        if len(r["tickers"]) > 1:
-            seg_values = [TICKER_DB[t]["ko"] if t in TICKER_DB else t for t in r["tickers"]]
-            self._raw_ticker_map = dict(zip(seg_values, r["tickers"]))
-            seg = ctk.CTkSegmentedButton(
-                scroll, values=seg_values, font=FONT_SMALL,
-                fg_color=THEME["surface"], selected_color=THEME["accent"],
-                selected_hover_color=THEME["accent_hover"],
-                unselected_color=THEME["card"],
-                text_color=THEME["text_primary"],
-                command=self._on_raw_ticker_select,
-            )
-            seg.pack(fill="x", padx=8, pady=(0, 8))
-            seg.set(seg_values[0])
-            self._render_raw_table(r["tickers"][0])
-        else:
-            self._render_raw_table(r["tickers"][0])
-
         # ── Parameter summary table ──
         param_frame = ctk.CTkFrame(scroll, fg_color=THEME["card"], corner_radius=8,
                                     border_width=1, border_color=THEME["border"])
@@ -987,77 +993,6 @@ class InvestmentSimulatorGUI:
                             (f"{s['mean']*100:.1f}%", 70), (f"{s['vol']*100:.1f}%", 70)]:
                 ctk.CTkLabel(prow, text=text, font=FONT_SMALL, width=w,
                              text_color=THEME["text_primary"]).pack(side="left", padx=4, pady=2)
-
-    def _on_raw_ticker_select(self, value):
-        ticker = self._raw_ticker_map.get(value, value)
-        self._render_raw_table(ticker)
-
-    def _render_raw_table(self, ticker, show_all=False):
-        """Render historical data table for a single ticker."""
-        for w in self._raw_data_table_frame.winfo_children():
-            w.destroy()
-
-        r = self._last_result
-        close, daily_ret = r["price_data"][ticker]
-        rolling_vol = daily_ret.rolling(60).std() * np.sqrt(252) * 100
-
-        # Limit to last 500 rows by default
-        n_rows = len(close)
-        display_n = n_rows if show_all else min(500, n_rows)
-        start_idx = n_rows - display_n
-
-        # Header
-        hdr = ctk.CTkFrame(self._raw_data_table_frame, fg_color=THEME["table_header_bg"])
-        hdr.pack(fill="x")
-        for text, w in [("날짜", 100), ("종가(₩)", 100), ("일간수익률(%)", 100), ("60일변동성(%)", 100)]:
-            ctk.CTkLabel(hdr, text=text, font=FONT_SMALL, width=w,
-                         text_color=THEME["text_primary"]).pack(side="left", padx=4, pady=4)
-
-        # Data rows (reversed: newest first)
-        for i in range(n_rows - 1, start_idx - 1, -1):
-            row_bg = THEME["table_row_alt"] if (n_rows - 1 - i) % 2 == 0 else THEME["card"]
-            row = ctk.CTkFrame(self._raw_data_table_frame, fg_color=row_bg)
-            row.pack(fill="x")
-
-            dt = close.index[i].strftime("%Y-%m-%d")
-            price = f"₩{close.iloc[i]:,.0f}"
-
-            if i < len(daily_ret) and i > 0:
-                ret_val = daily_ret.iloc[i - 1] * 100 if i - 1 < len(daily_ret) else None
-            else:
-                ret_val = None
-
-            # Align indices for daily_ret (which starts from index 1 of close)
-            ret_idx = close.index[i]
-            if ret_idx in daily_ret.index:
-                ret_val = daily_ret.loc[ret_idx] * 100
-                ret_text = f"{ret_val:+.2f}%"
-                ret_color = THEME["success"] if ret_val >= 0 else THEME["error"]
-            else:
-                ret_text = "—"
-                ret_color = THEME["text_disabled"]
-
-            if ret_idx in rolling_vol.index and not np.isnan(rolling_vol.loc[ret_idx]):
-                vol_text = f"{rolling_vol.loc[ret_idx]:.1f}%"
-            else:
-                vol_text = "—"
-
-            ctk.CTkLabel(row, text=dt, font=FONT_SMALL, width=100,
-                         text_color=THEME["text_primary"]).pack(side="left", padx=4, pady=1)
-            ctk.CTkLabel(row, text=price, font=FONT_SMALL, width=100,
-                         text_color=THEME["text_primary"]).pack(side="left", padx=4, pady=1)
-            ctk.CTkLabel(row, text=ret_text, font=FONT_SMALL, width=100,
-                         text_color=ret_color).pack(side="left", padx=4, pady=1)
-            ctk.CTkLabel(row, text=vol_text, font=FONT_SMALL, width=100,
-                         text_color=THEME["text_primary"]).pack(side="left", padx=4, pady=1)
-
-        # Show all button
-        if not show_all and n_rows > 500:
-            ctk.CTkButton(
-                self._raw_data_table_frame, text=f"전체 보기 ({n_rows:,}행)",
-                font=FONT_SMALL, fg_color=THEME["accent"], hover_color=THEME["accent_hover"],
-                command=lambda: self._render_raw_table(ticker, show_all=True),
-            ).pack(pady=8)
 
     # ───────────────────────────────
     #  Helpers
@@ -1092,6 +1027,7 @@ class InvestmentSimulatorGUI:
         self.initial_var.set("10,000,000")
         self.monthly_var.set("500,000")
         self.freq_var.set("매월")
+        self.history_years_var.set("25년")
         self.years_var.set("20")
         self.start_var.set("2025-01")
         self.end_var.set("2045-01")
@@ -1237,6 +1173,7 @@ class InvestmentSimulatorGUI:
             "initial": self.initial_var.get(),
             "monthly": self.monthly_var.get(),
             "freq": self.freq_var.get(),
+            "history_years": self.history_years_var.get(),
             "period_mode": self.period_mode.get(),
             "years": self.years_var.get(),
             "start": self.start_var.get(),
@@ -1262,6 +1199,7 @@ class InvestmentSimulatorGUI:
         self.initial_var.set(state.get("initial", "10,000,000"))
         self.monthly_var.set(state.get("monthly", "500,000"))
         self.freq_var.set(state.get("freq", "매월"))
+        self.history_years_var.set(state.get("history_years", "25년"))
         self.years_var.set(state.get("years", "20"))
         self.start_var.set(state.get("start", "2025-01"))
         self.end_var.set(state.get("end", "2045-01"))
