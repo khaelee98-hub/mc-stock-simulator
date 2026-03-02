@@ -733,34 +733,38 @@ def plot_ticker_comparison(ticker_metrics, tickers, weights, fig=None):
     colors = ACCENT_COLORS
 
     if fig is None:
-        total_height = (N * 1.2 + 0.6) * 6 + 4
+        total_height = (N * 1.1 + 1.0) * 3 + 6
         fig = Figure(figsize=(14, total_height), dpi=80)
 
+    # 4행 2열 구조 (마지막 행은 산점도용)
     gs = fig.add_gridspec(
-        nrows=7, ncols=2,
-        height_ratios=[N, N, N, N, N, N, 3],
-        hspace=0.5, wspace=0.35,
+        nrows=4, ncols=2,
+        height_ratios=[N, N, N, 4],
+        hspace=0.4, wspace=0.25,
     )
 
-    panel_funcs = [
-        _plot_hist_mu, _plot_hist_sigma,
-        _plot_hist_sharpe, _plot_hist_sortino,
-        _plot_hist_mdd, _plot_hist_var,
+    # 좌측: 수익률, Sharpe, MDD / 우측: 변동성, Sortino, VaR
+    panel_configs = [
+        (_plot_hist_mu, 0, 0),
+        (_plot_hist_sigma, 0, 1),
+        (_plot_hist_sharpe, 1, 0),
+        (_plot_hist_sortino, 1, 1),
+        (_plot_hist_mdd, 2, 0),
+        (_plot_hist_var, 2, 1),
     ]
 
-    for i, func in enumerate(panel_funcs):
-        col = i % 2
-        row = i // 2
-        sub_gs = gs[row, col].subgridspec(N, 1, hspace=0.4)
+    for func, row, col in panel_configs:
+        sub_gs = gs[row, col].subgridspec(N, 1, hspace=0.1)
         axes = [fig.add_subplot(sub_gs[j]) for j in range(N)]
         if N == 1:
             axes = axes[0]
         func(axes, ticker_metrics, tickers, colors)
 
-    # Scatter at bottom
-    ax_scatter = fig.add_subplot(gs[6, :])
+    # 마지막 행 전체를 산점도에 할당
+    ax_scatter = fig.add_subplot(gs[3, :])
     _plot_scatter_risk_return(ax_scatter, ticker_metrics, tickers, weights, colors)
 
+    fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.95)
     return fig
 
 

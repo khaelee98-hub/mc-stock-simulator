@@ -852,7 +852,7 @@ class InvestmentSimulatorGUI:
         from investment_simulator import plot_ticker_comparison
 
         N = len(r["tickers"])
-        total_height = (N * 1.2 + 0.6) * 6 + 4
+        total_height = (N * 1.1 + 1.0) * 3 + 6
         fig = Figure(figsize=(14, total_height), dpi=80)
         plot_ticker_comparison(r["ticker_metrics"], r["tickers"], r["weights"], fig=fig)
 
