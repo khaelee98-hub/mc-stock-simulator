@@ -509,8 +509,8 @@ def plot_summary_dashboard(paths, tickers, weights, stats, initial, contribution
     ax3 = fig.add_subplot(2, 2, 3)
     ax3.axis("off")
 
-    mdd = compute_mdd_stats(paths)
-    sortino = compute_sortino_ratio(port_mean, paths)
+    mdd = compute_mdd_stats(paths[:, 1:])
+    sortino = compute_sortino_ratio(port_mean, paths[:, 1:])
     sharpe_val = (port_mean - 0.04) / port_vol if port_vol > 0 else 0
 
     p10 = np.percentile(finals, 10)
