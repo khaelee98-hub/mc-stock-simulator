@@ -126,10 +126,15 @@ def compute_mdd_stats(paths):
 
     Args:
         paths: np.ndarray shape (num_sims, total_months+1)
+               paths[:, 0] may be 0 (pre-investment), so skip it.
 
     Returns:
         dict with median/mean/p90/worst MDD and median/mean recovery months.
     """
+    # Skip t=0 which is 0 (investment starts at t=1)
+    if paths.shape[1] > 1 and np.all(paths[:, 0] == 0):
+        paths = paths[:, 1:]
+
     running_max = np.maximum.accumulate(paths, axis=1)
     # Avoid division by zero
     running_max = np.where(running_max == 0, 1, running_max)
@@ -169,6 +174,10 @@ def compute_sortino_ratio(port_mean, paths, risk_free_rate=0.04):
     Returns:
         float: median Sortino ratio across paths
     """
+    # Skip t=0 which is 0 (investment starts at t=1)
+    if paths.shape[1] > 1 and np.all(paths[:, 0] == 0):
+        paths = paths[:, 1:]
+
     # Monthly log returns
     with np.errstate(divide="ignore", invalid="ignore"):
         monthly_returns = np.log(paths[:, 1:] / np.where(paths[:, :-1] == 0, 1, paths[:, :-1]))
