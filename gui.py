@@ -119,6 +119,7 @@ class InvestmentSimulatorGUI:
 
         self._setup_chart_style()
         self._build_ui()
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ───────────────────────────────
     #  Chart Style
@@ -565,6 +566,7 @@ class InvestmentSimulatorGUI:
         self.results_placeholder.pack(expand=True)
 
     def _clear_results(self):
+        plt.close("all")
         for w in self.right_panel.winfo_children():
             w.destroy()
 
@@ -831,9 +833,12 @@ class InvestmentSimulatorGUI:
         self._embed_figure(scroll, fig)
 
     def _show_comparison_help_popup(self):
-        if hasattr(self, "_help_window") and self._help_window.winfo_exists():
-            self._help_window.focus()
-            return
+        try:
+            if hasattr(self, "_help_window") and self._help_window.winfo_exists():
+                self._help_window.focus()
+                return
+        except Exception:
+            pass
 
         self._help_window = ctk.CTkToplevel(self.root)
         self._help_window.title("지표 설명")
@@ -1021,11 +1026,6 @@ class InvestmentSimulatorGUI:
 
             dt = close.index[i].strftime("%Y-%m-%d")
             price = f"₩{close.iloc[i]:,.0f}"
-
-            if i < len(daily_ret) and i > 0:
-                ret_val = daily_ret.iloc[i - 1] * 100 if i - 1 < len(daily_ret) else None
-            else:
-                ret_val = None
 
             # Align indices for daily_ret (which starts from index 1 of close)
             ret_idx = close.index[i]
@@ -1304,8 +1304,13 @@ class InvestmentSimulatorGUI:
             self._build_results_placeholder()
 
     # ───────────────────────────────
-    #  Run
+    #  Run / Close
     # ───────────────────────────────
+
+    def _on_close(self):
+        self._close_autocomplete()
+        plt.close("all")
+        self.root.destroy()
 
     def run(self):
         self.root.mainloop()
